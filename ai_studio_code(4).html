@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sandbox Zerstörer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        .font-pixel { font-family: 'Press Start 2P', cursive; }
+        canvas { image-rendering: pixelated; touch-action: none; }
+        
+        /* 3D-Effekt Menü */
+        .ergonomic-menu {
+            transform: perspective(600px) rotateY(12deg);
+            transform-origin: left center;
+        }
+        
+        .pointer-events-none-wrapper { pointer-events: none; }
+        .pointer-events-auto-child { pointer-events: auto; }
+        
+        /* Slider Styling */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 10px; background: #ffffff;
+            cursor: pointer; border: 2px solid #000; margin-top: -6px; box-shadow: 2px 2px 0px #000;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #4b5563; border: 1px solid #000;
+        }
+
+        body { overflow: hidden; background: #0f172a; }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="w-full h-full text-white font-pixel selection:bg-none cursor-crosshair">
+
+    <canvas id="world" class="absolute inset-0 w-full h-full z-0"></canvas>
+
+    <!-- UI Overlay -->
+    <div class="absolute inset-0 z-10 flex flex-col justify-between pointer-events-none-wrapper p-4">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-start w-full">
+            
+            <!-- Links: Welten -->
+            <div class="pointer-events-auto-child relative">
+                 <button onclick="toggleWorlds()" class="bg-blue-700 hover:bg-blue-600 text-white text-[8px] py-2 px-3 border-b-2 border-blue-900 active:translate-y-1 transition shadow-lg">
+                    [ WELTEN ]
+                </button>
+
+                <div id="worldsPanel" class="hidden absolute top-10 left-0 bg-gray-900/95 border-2 border-white/20 p-3 shadow-xl w-48 z-50 flex flex-col gap-2 text-[8px]">
+                    <h3 class="text-blue-400 border-b border-white/20 pb-1 mb-1">SZENARIEN</h3>
+                    <button onclick="loadWorld('forest')" class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🌲 WALD</button>
+                    <button onclick="loadWorld('village')" class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🏠 DORF</button>
+                    <button onclick="loadWorld('island')" class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🏝️ INSEL</button>
+                    <button onclick="loadWorld('volcano')" class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🌋 VULKAN</button>
+                    <button onclick="loadWorld('cave')" class="text-left hover:text-yellow-400 py-1 border-b border-white/10">⛏️ HÖHLE</button>
+                    <button onclick="loadWorld('sky')" class="text-left hover:text-yellow-400 py-1">☁️ HIMMEL</button>
+                </div>
+            </div>
+
+            <!-- Rechts: Settings -->
+            <div class="pointer-events-auto-child relative flex flex-col items-end gap-2">
+                <div class="flex gap-2">
+                    <button onclick="toggleSettings()" class="bg-gray-700 hover:bg-gray-600 text-white text-[8px] py-2 px-3 border-b-2 border-gray-900 active:translate-y-1 transition shadow-lg">
+                        [ OPT ]
+                    </button>
+                    <button onclick="resetWorld()" class="bg-red-600 hover:bg-red-500 text-white text-[8px] py-2 px-3 border-b-2 border-red-800 active:border-b-0 active:translate-y-1 transition shadow-lg uppercase">
+                        LEEREN
+                    </button>
+                </div>
+                
+                <div id="settingsPanel" class="hidden absolute top-10 right-0 bg-gray-900/95 border-2 border-white/20 p-4 shadow-xl w-64 z-50 flex flex-col gap-4 text-[10px]">
+                    <h3 class="text-yellow-400 border-b border-white/20 pb-2 mb-1">EINSTELLUNGEN</h3>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex justify-between"><span>PINSEL</span><span id="disp-brush" class="text-blue-400">2px</span></div>
+                        <input type="range" min="1" max="10" value="2" oninput="updateSetting('brush', this.value)">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex justify-between"><span>RADIERER</span><span id="disp-eraser" class="text-red-400">4px</span></div>
+                        <input type="range" min="1" max="15" value="4" oninput="updateSetting('eraser', this.value)">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex justify-between"><span>FEUER STÄRKE</span><span id="disp-fire" class="text-orange-400">100%</span></div>
+                        <input type="range" min="10" max="200" value="100" step="10" oninput="updateSetting('fire', this.value)">
+                    </div>
+                    <!-- FEUER CHAOS -->
+                    <div class="flex flex-col gap-1">
+                        <div class="flex justify-between"><span>FEUER CHAOS</span><span id="disp-chaos" class="text-purple-400">50%</span></div>
+                        <input type="range" min="0" max="200" value="50" step="10" oninput="updateSetting('chaos', this.value)">
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/80 p-1 border border-green-500/30 text-[6px] text-green-400 tracking-widest text-right w-full opacity-70">
+                    FPS:<span id="fps">60</span> ENT:<span id="entityCount">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Left Menu -->
+        <div class="flex-1 flex items-center">
+            <div class="ergonomic-menu flex flex-col gap-3 -ml-2">
+                <script>
+                    const tools = [
+                        {id: 1, name: 'STEIN', col: 'bg-gray-600', border: 'border-gray-800'},
+                        {id: 2, name: 'SAND', col: 'bg-yellow-600', border: 'border-yellow-800'},
+                        {id: 3, name: 'WASSER', col: 'bg-blue-600', border: 'border-blue-800'},
+                        {id: 4, name: 'HOLZ', col: 'bg-amber-800', border: 'border-amber-950'},
+                        {id: 5, name: 'BLATT', col: 'bg-green-700', border: 'border-green-900'},
+                        {id: 6, name: 'FEUER', col: 'bg-red-600', border: 'border-red-900'}, 
+                        {id: 0, name: 'RADIEREN', col: 'bg-white/10', border: 'border-white/30'}
+                    ];
+                    tools.forEach(t => {
+                        document.write(`
+                            <button onclick="setMaterial(${t.id})" id="btn-${t.id}"
+                                class="mat-btn w-28 h-8 ${t.col} hover:brightness-110 border-r-4 ${t.border} 
+                                pointer-events-auto-child text-[8px] uppercase flex items-center pl-3 
+                                shadow-lg transition-transform hover:translate-x-2">
+                                ${t.name}
+                            </button>
+                        `);
+                    });
+                </script>
+            </div>
+        </div>
+
+        <div class="text-center pointer-events-none text-white/30 text-[8px] mb-1 uppercase">
+            TOOL: <span id="currentMat" class="text-yellow-400">STEIN</span>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('world');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const fpsDisplay = document.getElementById('fps');
+        const entDisplay = document.getElementById('entityCount');
+        
+        const width = 200;
+        const height = 150;
+        
+        let grid = new Int8Array(width * height).fill(0);
+        let heatMap = new Uint8Array(width * height).fill(0);
+        let liquidDir = new Int8Array(width * height).fill(0); 
+
+        const M = { AIR: 0, STONE: 1, SAND: 2, WATER: 3, WOOD: 4, LEAVES: 5, FIRE: 6, STEAM: 8 };
+        const firePalette = [[0,0,0,0], [160, 0, 0], [230, 90, 0], [255, 200, 0], [255, 255, 200]];
+        const colors = {};
+        colors[M.AIR] = [15, 23, 42]; 
+        colors[M.STONE] = [100, 100, 100];
+        colors[M.SAND] = [220, 200, 150];
+        colors[M.WATER] = [40, 100, 220];
+        colors[M.WOOD] = [101, 67, 33];
+        colors[M.LEAVES] = [50, 140, 50];
+        colors[M.STEAM] = [200, 220, 230];
+
+        // --- STATE ---
+        let currentMaterial = M.STONE;
+        let isDrawing = false;
+        let brushSize = 2;
+        let eraserSize = 4;
+        let fireIntensity = 1.0;
+        let fireChaos = 0.5; // Standard 50%
+        let globalTime = 0;
+
+        const imgData = ctx.createImageData(width, height);
+        const data = imgData.data;
+
+        function resize() { canvas.width = width; canvas.height = height; }
+        window.addEventListener('resize', resize); resize();
+
+        // --- HELPER ---
+        function setPixel(x, y, mat) {
+            if (x >= 0 && x < width && y >= 0 && y < height) {
+                const idx = Math.floor(y) * width + Math.floor(x);
+                grid[idx] = mat; heatMap[idx] = 0; liquidDir[idx] = 0;
+            }
+        }
+        function drawRect(x, y, w, h, mat) { for(let i=0; i<w; i++) for(let j=0; j<h; j++) setPixel(x+i, y+j, mat); }
+        function drawCircle(cx, cy, r, mat) {
+            for(let y = -r; y <= r; y++) for(let x = -r; x <= r; x++) if(x*x + y*y <= r*r) setPixel(cx+x, cy+y, mat);
+        }
+        function drawTree(x, y) {
+            const h = 10 + Math.random() * 5;
+            drawRect(x, y-h, 2, h, M.WOOD); drawCircle(x+1, y-h-3, 5, M.LEAVES);
+        }
+
+        // --- WELTEN ---
+        function toggleWorlds() {
+            document.getElementById('worldsPanel').classList.toggle('hidden');
+            document.getElementById('settingsPanel').classList.add('hidden');
+        }
+
+        function loadWorld(type) {
+            resetWorld(); 
+            document.getElementById('worldsPanel').classList.add('hidden');
+            
+            if (type === 'forest') {
+                for(let x=0; x<width; x++) {
+                    const groundY = height - 20 + Math.sin(x*0.05)*10;
+                    for(let y=groundY; y<height; y++) setPixel(x, y, M.STONE);
+                    setPixel(x, groundY, M.SAND);
+                    if (Math.random() < 0.05 && x > 5 && x < width - 5) drawTree(x, groundY);
+                }
+            }
+            else if (type === 'village') {
+                drawRect(0, height-20, width, 20, M.STONE);
+                drawTree(20, height-20); drawTree(100, height-20); drawTree(180, height-20);
+                [50, 130].forEach(hx => {
+                    const hy = height - 20;
+                    drawRect(hx, hy-15, 20, 15, M.WOOD);
+                    for(let d=0; d<12; d++) drawRect(hx-2+d, hy-15-d, 24-(d*2), 1, M.STONE);
+                    drawRect(hx+8, hy-6, 4, 6, M.AIR);
+                });
+            }
+            else if (type === 'island') {
+                const waterLevel = height - 25;
+                drawRect(0, waterLevel, width, 25, M.WATER);
+                for(let x=0; x<width; x++) {
+                    const dx = (x - width/2) * 1.5; const dy = (dx*dx) / 50; 
+                    const groundY = height - 50 + dy; 
+                    if(groundY < height) for(let y=groundY; y<height; y++) setPixel(x, y, M.SAND);
+                }
+                const palmX = width/2; const palmY = height - 50; 
+                drawRect(palmX - 2, palmY - 25, 4, 25, M.WOOD);
+                const cy = palmY - 25;
+                drawCircle(palmX, cy, 8, M.LEAVES); drawCircle(palmX-6, cy+2, 5, M.LEAVES);
+                drawCircle(palmX+6, cy+2, 5, M.LEAVES); drawCircle(palmX, cy-5, 6, M.LEAVES);
+            }
+            else if (type === 'volcano') {
+                for(let x=0; x<width; x++) {
+                    const dx = Math.abs(x - width/2); const h = 70 - dx * 0.8;
+                    if(h > 0) {
+                        for(let y=height-h; y<height; y++) setPixel(x, y, M.STONE);
+                        if (x === 30 || x === 170) drawTree(x, height-h);
+                    }
+                }
+                drawRect(width/2 - 2, height-70, 4, 60, M.FIRE);
+                drawRect(width/2 - 5, height-72, 10, 2, M.FIRE);
+            }
+            else if (type === 'cave') {
+                drawRect(0, 0, width, height, M.STONE);
+                for(let x=0; x<width; x++) for(let y=0; y<height; y++) {
+                    const n = Math.sin(x*0.05) + Math.sin(y*0.05) + Math.sin((x+y)*0.02);
+                    if (n > 0.5) setPixel(x, y, M.AIR); else if (n < -0.8) setPixel(x, y, M.WOOD); 
+                }
+            }
+            else if (type === 'sky') {
+                for(let i=0; i<4; i++) {
+                    const ix = 20 + Math.random() * (width-40); const iy = 30 + Math.random() * (height-60);
+                    const w = 20 + Math.random() * 30;
+                    drawRect(ix, iy, w, 5, M.STONE); drawRect(ix, iy-1, w, 1, M.SAND);
+                    if(Math.random() < 0.5) drawTree(ix + w/2, iy-1);
+                }
+            }
+        }
+
+        // --- UI ---
+        function toggleSettings() {
+            document.getElementById('settingsPanel').classList.toggle('hidden');
+            document.getElementById('worldsPanel').classList.add('hidden');
+        }
+
+        function updateSetting(type, val) {
+            val = parseFloat(val);
+            if (type === 'brush') {
+                brushSize = val; document.getElementById('disp-brush').innerText = val + 'px';
+            } else if (type === 'eraser') {
+                eraserSize = val; document.getElementById('disp-eraser').innerText = val + 'px';
+            } else if (type === 'fire') {
+                fireIntensity = val / 100; document.getElementById('disp-fire').innerText = val + '%';
+            } else if (type === 'chaos') {
+                fireChaos = val / 100; // 0.0 bis 2.0
+                document.getElementById('disp-chaos').innerText = val + '%';
+            }
+        }
+
+        function setMaterial(id) {
+            currentMaterial = id;
+            const tool = tools.find(t => t.id === id);
+            if(tool) document.getElementById('currentMat').innerText = tool.name;
+            document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('translate-x-4', 'border-white'));
+            const btn = document.getElementById('btn-'+id);
+            if(btn) btn.classList.add('translate-x-4', 'border-white');
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: Math.floor((clientX - rect.left) * (width / rect.width)),
+                y: Math.floor((clientY - rect.top) * (height / rect.height))
+            };
+        }
+
+        function paint(e) {
+            if (!isDrawing) return;
+            if (e.target.closest('#settingsPanel') || e.target.closest('#worldsPanel')) return;
+
+            const { x, y } = getPos(e);
+            let size = (currentMaterial === M.AIR) ? eraserSize : brushSize;
+            let r = (size <= 1) ? 0 : Math.floor(size / 2);
+            
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    let py = y + dy; let px = x + dx;
+                    if (px >= 0 && px < width && py >= 0 && py < height) {
+                        let idx = py * width + px;
+                        if (currentMaterial === M.FIRE) {
+                            if (grid[idx] === M.STONE) {
+                                if (py > 0) { grid[(py-1)*width+px] = M.FIRE; heatMap[(py-1)*width+px] = 255; }
+                                continue; 
+                            }
+                        }
+                        if (currentMaterial === M.FIRE && (grid[idx] === M.STONE || grid[idx] === M.WOOD)) continue;
+                        grid[idx] = currentMaterial;
+                        if (currentMaterial === M.WATER) { heatMap[idx] = 0; liquidDir[idx] = 0; }
+                    }
+                }
+            }
+        }
+
+        ['mousedown', 'touchstart'].forEach(evt => canvas.addEventListener(evt, e => { isDrawing = true; paint(e); }));
+        ['mousemove', 'touchmove'].forEach(evt => canvas.addEventListener(evt, e => { if(isDrawing) { e.preventDefault(); paint(e); }}));
+        ['mouseup', 'touchend'].forEach(evt => window.addEventListener(evt, () => isDrawing = false));
+
+        function resetWorld() { grid.fill(0); heatMap.fill(0); liquidDir.fill(0); }
+
+        // --- PHYSICS UPDATE ---
+        function updatePhysics() {
+            let activeParticles = 0;
+            globalTime += 0.1;
+            
+            // 1. HEATMAP & FEUER LOGIK
+            for (let x = 0; x < width; x++) {
+                for (let y = 1; y < height; y++) {
+                    const idx = y * width + x;
+                    
+                    if (grid[idx] === M.FIRE) {
+                        heatMap[idx] = 255;
+                        continue;
+                    }
+
+                    // --- WIND LOGIK ---
+                    let windOffset = 0;
+                    
+                    if (fireChaos < 0.1) {
+                         if (Math.random() < 0.05 + Math.sin(globalTime)*0.05) windOffset = (Math.random()>0.5?1:-1);
+                    } else {
+                        const chaosFactor = fireChaos; 
+                        const rand = Math.random();
+                        if (rand < 0.3 * chaosFactor) {
+                             windOffset = (Math.random() > 0.5) ? 1 : -1;
+                        } else {
+                            if (rand < 0.4) windOffset = 0; else if (rand < 0.7) windOffset = -1; else windOffset = 1;
+                        }
+                    }
+
+                    const srcX = x + windOffset;
+                    if (srcX >= 0 && srcX < width) {
+                        const srcIdx = (y + 1) * width + srcX;
+                        
+                        // --- DECAY LOGIK ---
+                        let decay = 0;
+                        if (fireChaos < 0.1) {
+                            decay = 2; // Stabil
+                        } else {
+                            decay = Math.floor(Math.random() * 3); 
+                            if (Math.random() < (0.2 * fireChaos)) decay += Math.random() * 10; // Spikes
+                        }
+
+                        decay = decay / fireIntensity;
+                        let newHeat = (srcIdx < width * height) ? heatMap[srcIdx] - decay : 0;
+                        if (newHeat < 0) newHeat = 0;
+                        heatMap[idx] = newHeat;
+                    } else {
+                        heatMap[idx] = 0;
+                    }
+                    
+                    if (grid[idx] === M.WATER || grid[idx] === M.STONE) heatMap[idx] = 0;
+                }
+            }
+
+            // 2. MATERIALS
+            for (let y = height - 1; y >= 0; y--) {
+                const dir = Math.random() > 0.5 ? 1 : -1;
+                for (let i = 0; i < width; i++) {
+                    let x = (dir === 1) ? i : (width - 1 - i);
+                    const idx = y * width + x;
+                    const type = grid[idx];
+                    if (type === M.AIR) continue;
+                    activeParticles++;
+
+                    if (type === M.WOOD || type === M.LEAVES) {
+                        const ignitionThreshold = 120 / fireIntensity; 
+                        if (heatMap[idx] > ignitionThreshold && Math.random() < 0.08 * fireIntensity) {
+                            grid[idx] = M.FIRE; heatMap[idx] = 255;
+                        }
+                    }
+                    else if (type === M.FIRE) {
+                        if (heatMap[idx] === 0 && grid[idx] === M.FIRE) {
+                             const up = idx - width;
+                             if (y > 0 && grid[up] === M.WATER) { grid[idx] = M.AIR; grid[up] = M.STEAM; continue; }
+                        }
+                        if (y < height - 1) {
+                            const below = idx + width;
+                            const belowMat = grid[below];
+                            if (belowMat === M.AIR) { grid[below] = M.FIRE; grid[idx] = M.AIR; } 
+                            else if ((belowMat === M.WOOD || belowMat === M.LEAVES) && Math.random() < 0.03 * fireIntensity) grid[below] = M.FIRE;
+                        }
+                    }
+                    
+                    // --- SMOOTH WATER ---
+                    else if (type === M.WATER) {
+                        const below = idx + width;
+                        if (heatMap[idx] > 200) { grid[idx] = M.STEAM; continue; }
+                        
+                        if (y < height - 1) {
+                            if (grid[below] === M.AIR) {
+                                grid[below] = M.WATER; grid[idx] = M.AIR; liquidDir[below] = 0;
+                            } else if (grid[below] === M.FIRE) {
+                                grid[below] = M.AIR; grid[idx] = M.STEAM; 
+                            } else if (grid[below] !== M.AIR) {
+                                let flowDir = liquidDir[idx];
+                                if (flowDir === 0) flowDir = Math.random() < 0.5 ? 1 : -1;
+                                
+                                const speed = 4;
+                                let bestX = x;
+                                for(let k=1; k<=speed; k++) {
+                                    let nextX = x + (flowDir * k);
+                                    if(nextX < 0 || nextX >= width) break;
+                                    const nextIdx = y * width + nextX;
+                                    if (grid[nextIdx] !== M.AIR) break; 
+                                    bestX = nextX;
+                                }
+
+                                if (bestX !== x) {
+                                    grid[y * width + bestX] = M.WATER; grid[idx] = M.AIR;
+                                    liquidDir[y * width + bestX] = flowDir;
+                                } else {
+                                    liquidDir[idx] = -flowDir;
+                                }
+                            }
+                        }
+                    }
+                    
+                    else if (type === M.STEAM) {
+                        if (y > 0 && grid[idx-width] === M.AIR) { grid[idx-width]=M.STEAM; grid[idx]=M.AIR; } 
+                        else if(Math.random()<0.05) grid[idx]=M.AIR;
+                    }
+                    else if (type === M.SAND) {
+                        const below = idx + width;
+                        const belowL = idx + width - 1;
+                        const belowR = idx + width + 1;
+                        if (y < height - 1) {
+                            const bType = grid[below];
+                            if (bType === M.AIR || bType === M.WATER) {
+                                grid[idx] = (bType === M.WATER ? M.WATER : M.AIR); grid[below] = M.SAND;
+                            } else if (x > 0 && grid[belowL] === M.AIR) {
+                                grid[belowL] = M.SAND; grid[idx] = M.AIR;
+                            } else if (x < width - 1 && grid[belowR] === M.AIR) {
+                                grid[belowR] = M.SAND; grid[idx] = M.AIR;
+                            }
+                        }
+                    }
+                }
+            }
+            entDisplay.innerText = activeParticles;
+        }
+
+        function draw() {
+            let i = 0;
+            const time = Date.now() * 0.002;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const cell = grid[i];
+                    const heat = heatMap[i]; 
+                    let r, g, b;
+
+                    if (cell === M.AIR) {
+                        if (heat > 0) {
+                            let palIdx = 0;
+                            if (heat > 220) palIdx = 4; else if (heat > 160) palIdx = 3; 
+                            else if (heat > 80) palIdx = 2; else if (heat > 20) palIdx = 1;  
+                            if (palIdx > 0) [r, g, b] = firePalette[palIdx];
+                            else {
+                                const grad = y / height;
+                                r = 15 + (grad * 5); g = 23 + (grad * 10); b = 42 + (grad * 20);
+                            }
+                        } else {
+                            const grad = y / height;
+                            r = 15 + (grad * 5); g = 23 + (grad * 10); b = 42 + (grad * 20);
+                            const noise = Math.sin(x * 0.04 + time * 0.2) + Math.sin((x+y)*0.02) + Math.sin(y*0.1);
+                            let mask = 1 - (y / (height * 0.45)); mask = Math.max(0, mask);
+                            if (noise > 0.5 && mask > 0) {
+                                const cloud = (noise * mask * 60); r += cloud; g += cloud; b += cloud + 10;
+                            }
+                        }
+                    } 
+                    else if (cell === M.FIRE) { r = 255; g = 255; b = 200; }
+                    else {
+                        [r, g, b] = colors[cell];
+                        if (cell !== M.WATER && cell !== M.STEAM) {
+                             const noise = (Math.random() - 0.5) * 15; r+=noise; g+=noise; b+=noise;
+                        }
+                        if (cell === M.WATER && liquidDir[i] !== 0) { r+=10; g+=10; b+=20; }
+                        if ((cell === M.WOOD || cell === M.LEAVES) && heat > 50) { r += (heat/2); g -= (heat/3); }
+                    }
+                    const pIdx = i * 4;
+                    data[pIdx] = r; data[pIdx+1] = g; data[pIdx+2] = b; data[pIdx+3] = 255;
+                    i++;
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        let lastTime = 0;
+        function loop(timestamp) {
+            const dt = timestamp - lastTime;
+            updatePhysics();
+            draw();
+            if (dt > 0 && timestamp % 10 < 1) fpsDisplay.innerText = Math.round(1000 / dt);
+            lastTime = timestamp;
+            requestAnimationFrame(loop);
+        }
+
+        resetWorld();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
