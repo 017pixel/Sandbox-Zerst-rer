@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,55 +8,215 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        .font-pixel { font-family: 'Press Start 2P', cursive; }
-        canvas { image-rendering: pixelated; touch-action: none; }
-        
-        /* 3D-Effekt Menü */
+        .font-pixel {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            touch-action: none;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 3D-Effekt Menü - disabled on mobile for cleaner look */
         .ergonomic-menu {
             transform: perspective(600px) rotateY(12deg);
             transform-origin: left center;
         }
-        
-        .pointer-events-none-wrapper { pointer-events: none; }
-        .pointer-events-auto-child { pointer-events: auto; }
-        
-        /* Slider Styling */
-        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 16px; width: 10px; background: #ffffff;
-            cursor: pointer; border: 2px solid #000; margin-top: -6px; box-shadow: 2px 2px 0px #000;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 4px; cursor: pointer; background: #4b5563; border: 1px solid #000;
+
+        @media (max-width: 640px) {
+            .ergonomic-menu {
+                transform: none;
+            }
         }
 
-        body { overflow: hidden; background: #0f172a; }
-        ::-webkit-scrollbar { display: none; }
+        .pointer-events-none-wrapper {
+            pointer-events: none;
+        }
+
+        .pointer-events-auto-child {
+            pointer-events: auto;
+        }
+
+        /* Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 10px;
+            background: #ffffff;
+            cursor: pointer;
+            border: 2px solid #000;
+            margin-top: -6px;
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #4b5563;
+            border: 1px solid #000;
+        }
+
+        body {
+            overflow: hidden;
+            background: #0f172a;
+        }
+
+        /* Inventory Expansion Styles */
+        .inventory-panel {
+            background: rgba(15, 23, 42, 0.98);
+            border-top: 4px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateY(100%);
+            z-index: 50;
+        }
+
+        .inventory-panel.open {
+            transform: translateY(0);
+        }
+
+        .inventory-item {
+            background-color: transparent;
+            border: none;
+            transition: all 0.15s ease-out;
+        }
+
+        .inventory-item:hover {
+            transform: translateX(4px);
+        }
+
+        .inventory-item.active .item-box {
+            box-shadow: 0 0 0 2px #facc15, 0 0 12px rgba(250, 204, 21, 0.4);
+        }
+
+        .item-box {
+            border-right: 4px solid rgba(0, 0, 0, 0.5);
+            transition: all 0.15s ease-out;
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ===== MOBILE RESPONSIVE ===== */
+        @media (max-width: 640px) {
+
+            /* Smaller tool buttons on mobile */
+            .mat-btn {
+                width: 5.5rem !important;
+                height: 1.75rem !important;
+                font-size: 6px !important;
+                padding-left: 0.5rem !important;
+            }
+
+            /* Smaller header buttons */
+            .pointer-events-auto-child button {
+                font-size: 6px !important;
+                padding: 0.35rem 0.5rem !important;
+            }
+
+            /* Inventory panel adjustments */
+            .inventory-panel {
+                padding: 1rem;
+                max-height: 60vh;
+            }
+
+            .inventory-panel h2 {
+                font-size: 10px !important;
+            }
+
+            /* Grid columns for mobile */
+            #bigInventoryGrid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.5rem !important;
+            }
+
+            .item-box {
+                height: 2rem !important;
+            }
+
+            /* Settings panel mobile */
+            #settingsPanel {
+                width: 90vw !important;
+                max-width: 280px;
+                right: 0 !important;
+                font-size: 8px !important;
+            }
+
+            /* Worlds panel mobile */
+            #worldsPanel {
+                width: 90vw !important;
+                max-width: 200px;
+            }
+
+            /* Status bar smaller */
+            .text-\[6px\] {
+                font-size: 5px !important;
+            }
+
+            /* Tool indicator smaller */
+            .text-\[8px\] {
+                font-size: 6px !important;
+            }
+        }
+
+        /* Very small screens (iPhone SE etc) */
+        @media (max-width: 380px) {
+            .mat-btn {
+                width: 4.5rem !important;
+                font-size: 5px !important;
+            }
+
+            .inventory-panel {
+                padding: 0.75rem;
+            }
+        }
     </style>
 </head>
+
 <body class="w-full h-full text-white font-pixel selection:bg-none cursor-crosshair">
 
     <canvas id="world" class="absolute inset-0 w-full h-full z-0"></canvas>
 
     <!-- UI Overlay -->
-    <div class="absolute inset-0 z-10 flex flex-col justify-between pointer-events-none-wrapper p-4">
-        
+    <div class="absolute inset-0 z-10 flex flex-col justify-between pointer-events-none-wrapper p-2 sm:p-4">
+
         <!-- Header -->
         <div class="flex justify-between items-start w-full">
-            
+
             <!-- Links: Welten -->
             <div class="pointer-events-auto-child relative">
-                 <button onclick="toggleWorlds()" class="bg-blue-700 hover:bg-blue-600 text-white text-[8px] py-2 px-3 border-b-2 border-blue-900 active:translate-y-1 transition shadow-lg">
+                <button onclick="toggleWorlds()"
+                    class="bg-blue-700 hover:bg-blue-600 text-white text-[8px] py-2 px-3 border-b-2 border-blue-900 active:translate-y-1 transition shadow-lg">
                     [ WELTEN ]
                 </button>
 
-                <div id="worldsPanel" class="hidden absolute top-10 left-0 bg-gray-900/95 border-2 border-white/20 p-3 shadow-xl w-48 z-50 flex flex-col gap-2 text-[8px]">
+                <div id="worldsPanel"
+                    class="hidden absolute top-10 left-0 bg-gray-900/95 border-2 border-white/20 p-3 shadow-xl w-48 z-50 flex flex-col gap-2 text-[8px]">
                     <h3 class="text-blue-400 border-b border-white/20 pb-1 mb-1">SZENARIEN</h3>
-                    <button onclick="loadWorld('forest')" class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🌲 WALD</button>
-                    <button onclick="loadWorld('village')" class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🏠 DORF</button>
-                    <button onclick="loadWorld('island')" class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🏝️ INSEL</button>
-                    <button onclick="loadWorld('volcano')" class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🌋 VULKAN</button>
-                    <button onclick="loadWorld('cave')" class="text-left hover:text-yellow-400 py-1 border-b border-white/10">⛏️ HÖHLE</button>
+                    <button onclick="loadWorld('forest')"
+                        class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🌲 WALD</button>
+                    <button onclick="loadWorld('village')"
+                        class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🏠 DORF</button>
+                    <button onclick="loadWorld('island')"
+                        class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🏝️ INSEL</button>
+                    <button onclick="loadWorld('volcano')"
+                        class="text-left hover:text-yellow-400 py-1 border-b border-white/10">🌋 VULKAN</button>
+                    <button onclick="loadWorld('cave')"
+                        class="text-left hover:text-yellow-400 py-1 border-b border-white/10">⛏️ HÖHLE</button>
                     <button onclick="loadWorld('sky')" class="text-left hover:text-yellow-400 py-1">☁️ HIMMEL</button>
                 </div>
             </div>
@@ -63,36 +224,53 @@
             <!-- Rechts: Settings -->
             <div class="pointer-events-auto-child relative flex flex-col items-end gap-2">
                 <div class="flex gap-2">
-                    <button onclick="toggleSettings()" class="bg-gray-700 hover:bg-gray-600 text-white text-[8px] py-2 px-3 border-b-2 border-gray-900 active:translate-y-1 transition shadow-lg">
+                    <button onclick="toggleSettings()"
+                        class="bg-gray-700 hover:bg-gray-600 text-white text-[8px] py-2 px-3 border-b-2 border-gray-900 active:translate-y-1 transition shadow-lg">
                         [ OPT ]
                     </button>
-                    <button onclick="resetWorld()" class="bg-red-600 hover:bg-red-500 text-white text-[8px] py-2 px-3 border-b-2 border-red-800 active:border-b-0 active:translate-y-1 transition shadow-lg uppercase">
+                    <button onclick="resetWorld()"
+                        class="bg-red-600 hover:bg-red-500 text-white text-[8px] py-2 px-3 border-b-2 border-red-800 active:border-b-0 active:translate-y-1 transition shadow-lg uppercase">
                         LEEREN
                     </button>
                 </div>
-                
-                <div id="settingsPanel" class="hidden absolute top-10 right-0 bg-gray-900/95 border-2 border-white/20 p-4 shadow-xl w-64 z-50 flex flex-col gap-4 text-[10px]">
+
+                <div id="settingsPanel"
+                    class="hidden absolute top-10 right-0 bg-gray-900/95 border-2 border-white/20 p-4 shadow-xl w-64 z-50 flex flex-col gap-4 text-[10px]">
                     <h3 class="text-yellow-400 border-b border-white/20 pb-2 mb-1">EINSTELLUNGEN</h3>
                     <div class="flex flex-col gap-1">
-                        <div class="flex justify-between"><span>PINSEL</span><span id="disp-brush" class="text-blue-400">2px</span></div>
+                        <div class="flex justify-between"><span>PINSEL</span><span id="disp-brush"
+                                class="text-blue-400">2px</span></div>
                         <input type="range" min="1" max="10" value="2" oninput="updateSetting('brush', this.value)">
                     </div>
                     <div class="flex flex-col gap-1">
-                        <div class="flex justify-between"><span>RADIERER</span><span id="disp-eraser" class="text-red-400">4px</span></div>
+                        <div class="flex justify-between"><span>RADIERER</span><span id="disp-eraser"
+                                class="text-red-400">4px</span></div>
                         <input type="range" min="1" max="15" value="4" oninput="updateSetting('eraser', this.value)">
                     </div>
                     <div class="flex flex-col gap-1">
-                        <div class="flex justify-between"><span>FEUER STÄRKE</span><span id="disp-fire" class="text-orange-400">100%</span></div>
-                        <input type="range" min="10" max="200" value="100" step="10" oninput="updateSetting('fire', this.value)">
+                        <div class="flex justify-between"><span>FEUER STÄRKE</span><span id="disp-fire"
+                                class="text-orange-400">100%</span></div>
+                        <input type="range" min="10" max="200" value="100" step="10"
+                            oninput="updateSetting('fire', this.value)">
                     </div>
                     <!-- FEUER CHAOS -->
                     <div class="flex flex-col gap-1">
-                        <div class="flex justify-between"><span>FEUER CHAOS</span><span id="disp-chaos" class="text-purple-400">50%</span></div>
-                        <input type="range" min="0" max="200" value="50" step="10" oninput="updateSetting('chaos', this.value)">
+                        <div class="flex justify-between"><span>FEUER CHAOS</span><span id="disp-chaos"
+                                class="text-purple-400">50%</span></div>
+                        <input type="range" min="0" max="200" value="50" step="10"
+                            oninput="updateSetting('chaos', this.value)">
+                    </div>
+                    <!-- TICK SPEED -->
+                    <div class="flex flex-col gap-1">
+                        <div class="flex justify-between"><span>TIMESCALE</span><span id="disp-speed"
+                                class="text-emerald-400">100%</span></div>
+                        <input type="range" min="0" max="200" value="100" step="10"
+                            oninput="updateSetting('speed', this.value)">
                     </div>
                 </div>
 
-                <div class="bg-gray-900/80 p-1 border border-green-500/30 text-[6px] text-green-400 tracking-widest text-right w-full opacity-70">
+                <div
+                    class="bg-gray-900/80 p-1 border border-green-500/30 text-[6px] text-green-400 tracking-widest text-right w-full opacity-70">
                     FPS:<span id="fps">60</span> ENT:<span id="entityCount">0</span>
                 </div>
             </div>
@@ -100,28 +278,17 @@
 
         <!-- Left Menu -->
         <div class="flex-1 flex items-center">
-            <div class="ergonomic-menu flex flex-col gap-3 -ml-2">
-                <script>
-                    const tools = [
-                        {id: 1, name: 'STEIN', col: 'bg-gray-600', border: 'border-gray-800'},
-                        {id: 2, name: 'SAND', col: 'bg-yellow-600', border: 'border-yellow-800'},
-                        {id: 3, name: 'WASSER', col: 'bg-blue-600', border: 'border-blue-800'},
-                        {id: 4, name: 'HOLZ', col: 'bg-amber-800', border: 'border-amber-950'},
-                        {id: 5, name: 'BLATT', col: 'bg-green-700', border: 'border-green-900'},
-                        {id: 6, name: 'FEUER', col: 'bg-red-600', border: 'border-red-900'}, 
-                        {id: 0, name: 'RADIEREN', col: 'bg-white/10', border: 'border-white/30'}
-                    ];
-                    tools.forEach(t => {
-                        document.write(`
-                            <button onclick="setMaterial(${t.id})" id="btn-${t.id}"
-                                class="mat-btn w-28 h-8 ${t.col} hover:brightness-110 border-r-4 ${t.border} 
-                                pointer-events-auto-child text-[8px] uppercase flex items-center pl-3 
-                                shadow-lg transition-transform hover:translate-x-2">
-                                ${t.name}
-                            </button>
-                        `);
-                    });
-                </script>
+            <div class="ergonomic-menu flex flex-col gap-2 sm:gap-3 -ml-2">
+                <div id="tools-container" class="flex flex-col gap-2 sm:gap-3">
+                    <!-- Tools generated by JS -->
+                </div>
+
+                <!-- EXTENSION BUTTON -->
+                <button onclick="toggleBigInventory()"
+                    class="mat-btn w-28 h-8 bg-gray-700 hover:bg-gray-600 border-r-4 border-gray-600 
+                    pointer-events-auto-child flex items-center justify-center text-white shadow-lg transition-transform hover:translate-x-2">
+                    <span class="text-[10px] font-bold tracking-widest">...</span>
+                </button>
             </div>
         </div>
 
@@ -130,29 +297,56 @@
         </div>
     </div>
 
+    <!-- LARGE INVENTORY PANEL -->
+    <div id="bigInventory"
+        class="inventory-panel absolute bottom-0 left-0 right-0 h-auto max-h-[50vh] p-6 pointer-events-auto-child overflow-y-auto flex flex-col shadow-2xl">
+        <div class="flex justify-between items-center mb-4 pb-3 border-b border-white/10">
+            <h2 class="text-sm text-yellow-400 font-pixel tracking-wider">ERWEITERTES INVENTAR</h2>
+            <button onclick="toggleBigInventory()"
+                class="bg-gray-700 hover:bg-gray-600 text-white text-[8px] py-2 px-3 border-b-2 border-gray-900 active:translate-y-1 transition shadow-lg uppercase">
+                SCHLIESSEN
+            </button>
+        </div>
+
+        <p class="text-gray-500 text-[8px] mb-4 uppercase tracking-wider">Wähle bis zu 2 Elemente aus</p>
+
+        <div id="bigInventoryGrid" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pb-4">
+            <!-- Grid Items rendered via JS -->
+        </div>
+    </div>
+
     <script>
         const canvas = document.getElementById('world');
         const ctx = canvas.getContext('2d', { alpha: false });
         const fpsDisplay = document.getElementById('fps');
         const entDisplay = document.getElementById('entityCount');
-        
+
         const width = 200;
         const height = 150;
-        
+
         let grid = new Int8Array(width * height).fill(0);
         let heatMap = new Uint8Array(width * height).fill(0);
-        let liquidDir = new Int8Array(width * height).fill(0); 
+        let liquidDir = new Int8Array(width * height).fill(0);
 
-        const M = { AIR: 0, STONE: 1, SAND: 2, WATER: 3, WOOD: 4, LEAVES: 5, FIRE: 6, STEAM: 8 };
-        const firePalette = [[0,0,0,0], [160, 0, 0], [230, 90, 0], [255, 200, 0], [255, 255, 200]];
+        const M = { AIR: 0, STONE: 1, SAND: 2, WATER: 3, WOOD: 4, LEAVES: 5, FIRE: 6, STEAM: 8, FIREWORK: 9, VINE: 10, LAVA: 11, SPARK: 12 };
+        const firePalette = [[0, 0, 0, 0], [160, 0, 0], [230, 90, 0], [255, 200, 0], [255, 255, 200]];
         const colors = {};
-        colors[M.AIR] = [15, 23, 42]; 
+        colors[M.AIR] = [15, 23, 42];
         colors[M.STONE] = [100, 100, 100];
         colors[M.SAND] = [220, 200, 150];
         colors[M.WATER] = [40, 100, 220];
         colors[M.WOOD] = [101, 67, 33];
         colors[M.LEAVES] = [50, 140, 50];
         colors[M.STEAM] = [200, 220, 230];
+        colors[M.LAVA] = [255, 80, 0];
+        colors[M.VINE] = [30, 100, 30];
+        colors[M.FIREWORK] = [255, 255, 255];
+        colors[M.SPARK] = [255, 200, 100];
+
+        // Firework velocity tracking (stores upward velocity per cell)
+        let fireworkVel = new Int16Array(width * height).fill(0);
+        // Spark colors (random per spark)
+        let sparkColors = new Uint32Array(width * height).fill(0);
 
         // --- STATE ---
         let currentMaterial = M.STONE;
@@ -161,7 +355,28 @@
         let eraserSize = 4;
         let fireIntensity = 1.0;
         let fireChaos = 0.5; // Standard 50%
+        let simulationSpeed = 1.0; // 1.0 = Normal
         let globalTime = 0;
+
+        // --- INVENTORY STATE ---
+        const permanentTools = [
+            { id: M.STONE, name: 'STEIN', col: 'bg-gray-600', border: 'border-gray-800' },
+            { id: M.SAND, name: 'SAND', col: 'bg-yellow-600', border: 'border-yellow-800' },
+            { id: M.WATER, name: 'WASSER', col: 'bg-blue-600', border: 'border-blue-800' },
+            { id: M.WOOD, name: 'HOLZ', col: 'bg-amber-800', border: 'border-amber-950' },
+            { id: M.FIRE, name: 'FEUER', col: 'bg-red-600', border: 'border-red-900' },
+            { id: M.AIR, name: 'RADIEREN', col: 'bg-white/10', border: 'border-white/30' }
+        ];
+
+        const extraToolsSource = [
+            { id: M.LEAVES, name: 'BLATT', col: 'bg-green-700', border: 'border-green-900', desc: 'Wächst an Bäumen' },
+            { id: M.FIREWORK, name: 'FEUERWERK', col: 'bg-yellow-500', border: 'border-yellow-700', desc: 'Schießt hoch & explodiert' },
+            { id: M.VINE, name: 'RANKE', col: 'bg-emerald-700', border: 'border-emerald-900', desc: 'Wächst über Blöcke' },
+            { id: M.LAVA, name: 'LAVA', col: 'bg-orange-600', border: 'border-orange-800', desc: 'Langsam, brennt alles' },
+        ];
+
+        let activeExtraTools = []; // Max 2
+        let allCurrentTools = [];
 
         const imgData = ctx.createImageData(width, height);
         const data = imgData.data;
@@ -176,13 +391,13 @@
                 grid[idx] = mat; heatMap[idx] = 0; liquidDir[idx] = 0;
             }
         }
-        function drawRect(x, y, w, h, mat) { for(let i=0; i<w; i++) for(let j=0; j<h; j++) setPixel(x+i, y+j, mat); }
+        function drawRect(x, y, w, h, mat) { for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) setPixel(x + i, y + j, mat); }
         function drawCircle(cx, cy, r, mat) {
-            for(let y = -r; y <= r; y++) for(let x = -r; x <= r; x++) if(x*x + y*y <= r*r) setPixel(cx+x, cy+y, mat);
+            for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r) setPixel(cx + x, cy + y, mat);
         }
         function drawTree(x, y) {
             const h = 10 + Math.random() * 5;
-            drawRect(x, y-h, 2, h, M.WOOD); drawCircle(x+1, y-h-3, 5, M.LEAVES);
+            drawRect(x, y - h, 2, h, M.WOOD); drawCircle(x + 1, y - h - 3, 5, M.LEAVES);
         }
 
         // --- WELTEN ---
@@ -192,65 +407,65 @@
         }
 
         function loadWorld(type) {
-            resetWorld(); 
+            resetWorld();
             document.getElementById('worldsPanel').classList.add('hidden');
-            
+
             if (type === 'forest') {
-                for(let x=0; x<width; x++) {
-                    const groundY = height - 20 + Math.sin(x*0.05)*10;
-                    for(let y=groundY; y<height; y++) setPixel(x, y, M.STONE);
+                for (let x = 0; x < width; x++) {
+                    const groundY = height - 20 + Math.sin(x * 0.05) * 10;
+                    for (let y = groundY; y < height; y++) setPixel(x, y, M.STONE);
                     setPixel(x, groundY, M.SAND);
                     if (Math.random() < 0.05 && x > 5 && x < width - 5) drawTree(x, groundY);
                 }
             }
             else if (type === 'village') {
-                drawRect(0, height-20, width, 20, M.STONE);
-                drawTree(20, height-20); drawTree(100, height-20); drawTree(180, height-20);
+                drawRect(0, height - 20, width, 20, M.STONE);
+                drawTree(20, height - 20); drawTree(100, height - 20); drawTree(180, height - 20);
                 [50, 130].forEach(hx => {
                     const hy = height - 20;
-                    drawRect(hx, hy-15, 20, 15, M.WOOD);
-                    for(let d=0; d<12; d++) drawRect(hx-2+d, hy-15-d, 24-(d*2), 1, M.STONE);
-                    drawRect(hx+8, hy-6, 4, 6, M.AIR);
+                    drawRect(hx, hy - 15, 20, 15, M.WOOD);
+                    for (let d = 0; d < 12; d++) drawRect(hx - 2 + d, hy - 15 - d, 24 - (d * 2), 1, M.STONE);
+                    drawRect(hx + 8, hy - 6, 4, 6, M.AIR);
                 });
             }
             else if (type === 'island') {
                 const waterLevel = height - 25;
                 drawRect(0, waterLevel, width, 25, M.WATER);
-                for(let x=0; x<width; x++) {
-                    const dx = (x - width/2) * 1.5; const dy = (dx*dx) / 50; 
-                    const groundY = height - 50 + dy; 
-                    if(groundY < height) for(let y=groundY; y<height; y++) setPixel(x, y, M.SAND);
+                for (let x = 0; x < width; x++) {
+                    const dx = (x - width / 2) * 1.5; const dy = (dx * dx) / 50;
+                    const groundY = height - 50 + dy;
+                    if (groundY < height) for (let y = groundY; y < height; y++) setPixel(x, y, M.SAND);
                 }
-                const palmX = width/2; const palmY = height - 50; 
+                const palmX = width / 2; const palmY = height - 50;
                 drawRect(palmX - 2, palmY - 25, 4, 25, M.WOOD);
                 const cy = palmY - 25;
-                drawCircle(palmX, cy, 8, M.LEAVES); drawCircle(palmX-6, cy+2, 5, M.LEAVES);
-                drawCircle(palmX+6, cy+2, 5, M.LEAVES); drawCircle(palmX, cy-5, 6, M.LEAVES);
+                drawCircle(palmX, cy, 8, M.LEAVES); drawCircle(palmX - 6, cy + 2, 5, M.LEAVES);
+                drawCircle(palmX + 6, cy + 2, 5, M.LEAVES); drawCircle(palmX, cy - 5, 6, M.LEAVES);
             }
             else if (type === 'volcano') {
-                for(let x=0; x<width; x++) {
-                    const dx = Math.abs(x - width/2); const h = 70 - dx * 0.8;
-                    if(h > 0) {
-                        for(let y=height-h; y<height; y++) setPixel(x, y, M.STONE);
-                        if (x === 30 || x === 170) drawTree(x, height-h);
+                for (let x = 0; x < width; x++) {
+                    const dx = Math.abs(x - width / 2); const h = 70 - dx * 0.8;
+                    if (h > 0) {
+                        for (let y = height - h; y < height; y++) setPixel(x, y, M.STONE);
+                        if (x === 30 || x === 170) drawTree(x, height - h);
                     }
                 }
-                drawRect(width/2 - 2, height-70, 4, 60, M.FIRE);
-                drawRect(width/2 - 5, height-72, 10, 2, M.FIRE);
+                drawRect(width / 2 - 2, height - 70, 4, 60, M.FIRE);
+                drawRect(width / 2 - 5, height - 72, 10, 2, M.FIRE);
             }
             else if (type === 'cave') {
                 drawRect(0, 0, width, height, M.STONE);
-                for(let x=0; x<width; x++) for(let y=0; y<height; y++) {
-                    const n = Math.sin(x*0.05) + Math.sin(y*0.05) + Math.sin((x+y)*0.02);
-                    if (n > 0.5) setPixel(x, y, M.AIR); else if (n < -0.8) setPixel(x, y, M.WOOD); 
+                for (let x = 0; x < width; x++) for (let y = 0; y < height; y++) {
+                    const n = Math.sin(x * 0.05) + Math.sin(y * 0.05) + Math.sin((x + y) * 0.02);
+                    if (n > 0.5) setPixel(x, y, M.AIR); else if (n < -0.8) setPixel(x, y, M.WOOD);
                 }
             }
             else if (type === 'sky') {
-                for(let i=0; i<4; i++) {
-                    const ix = 20 + Math.random() * (width-40); const iy = 30 + Math.random() * (height-60);
+                for (let i = 0; i < 4; i++) {
+                    const ix = 20 + Math.random() * (width - 40); const iy = 30 + Math.random() * (height - 60);
                     const w = 20 + Math.random() * 30;
-                    drawRect(ix, iy, w, 5, M.STONE); drawRect(ix, iy-1, w, 1, M.SAND);
-                    if(Math.random() < 0.5) drawTree(ix + w/2, iy-1);
+                    drawRect(ix, iy, w, 5, M.STONE); drawRect(ix, iy - 1, w, 1, M.SAND);
+                    if (Math.random() < 0.5) drawTree(ix + w / 2, iy - 1);
                 }
             }
         }
@@ -272,16 +487,119 @@
             } else if (type === 'chaos') {
                 fireChaos = val / 100; // 0.0 bis 2.0
                 document.getElementById('disp-chaos').innerText = val + '%';
+            } else if (type === 'speed') {
+                simulationSpeed = val / 100; // 0.0 to 2.0
+                document.getElementById('disp-speed').innerText = val + '%';
             }
+        }
+
+        // --- INVENTORY LOGIC ---
+        function renderTools() {
+            const container = document.getElementById('tools-container');
+            container.innerHTML = '';
+
+            // Combine permanent and active extra
+            allCurrentTools = [...permanentTools];
+            // Insert extras before 'Eraser' (last one in permanentTools) or just append? 
+            // Let's append extras before the last item (Eraser) so Eraser is always at bottom of list naturally
+            // actually permanentTools has Eraser at end.
+            // Let's just put extras before eraser for better UX
+            const eraser = allCurrentTools.pop();
+            allCurrentTools = [...allCurrentTools, ...activeExtraTools, eraser];
+
+            allCurrentTools.forEach(t => {
+                const btn = document.createElement('button');
+                btn.onclick = () => setMaterial(t.id);
+                btn.id = 'btn-' + t.id;
+                btn.className = `mat-btn w-28 h-8 ${t.col} hover:brightness-110 border-r-4 ${t.border} 
+                                pointer-events-auto-child text-[8px] uppercase flex items-center pl-3 
+                                shadow-lg transition-transform hover:translate-x-2 relative`;
+
+                // Add marker for optional tools
+                if (activeExtraTools.find(ex => ex.id === t.id)) {
+                    btn.innerHTML = `<span>${t.name}</span> <span class="absolute right-2 text-yellow-300 text-[6px]">*</span>`;
+                } else {
+                    btn.innerText = t.name;
+                }
+
+                container.appendChild(btn);
+            });
+
+            // Re-highlight current
+            setMaterial(currentMaterial);
+        }
+
+        function toggleBigInventory() {
+            document.getElementById('bigInventory').classList.toggle('open');
+            // Re-render if opening
+            if (document.getElementById('bigInventory').classList.contains('open')) {
+                renderBigInventory();
+            }
+        }
+
+        function renderBigInventory() {
+            const grid = document.getElementById('bigInventoryGrid');
+            grid.innerHTML = '';
+
+            extraToolsSource.forEach(item => {
+                const isSelected = activeExtraTools.some(x => x.id === item.id);
+                const el = document.createElement('button');
+                el.onclick = () => selectExtraTool(item.id);
+
+                el.className = `inventory-item flex flex-col items-stretch ${isSelected ? 'active' : ''}`;
+
+                // Create a box similar to sidebar items
+                el.innerHTML = `
+                    <div class="item-box ${item.col} h-10 flex items-center justify-between px-3 shadow-md">
+                        <span class="text-[8px] text-white uppercase font-bold drop-shadow">${item.name}</span>
+                        ${isSelected ? '<span class="text-[6px] text-yellow-200">✓</span>' : ''}
+                    </div>
+                    <span class="text-[7px] text-gray-500 mt-1 text-left px-1">${item.desc}</span>
+                `;
+
+                grid.appendChild(el);
+            });
+        }
+
+        function selectExtraTool(id) {
+            const target = extraToolsSource.find(t => t.id === id);
+            if (!target) return;
+
+            // Check if already active
+            const idx = activeExtraTools.findIndex(t => t.id === id);
+
+            if (idx >= 0) {
+                // Remove if clicked again? Or just select it? 
+                // User requirement: "click to add". Maybe click again to remove is intuitive.
+                activeExtraTools.splice(idx, 1);
+            } else {
+                // Add
+                if (activeExtraTools.length >= 2) {
+                    // Remove first one (FIFO)
+                    activeExtraTools.shift();
+                }
+                activeExtraTools.push(target);
+            }
+
+            renderBigInventory();
+            renderTools();
         }
 
         function setMaterial(id) {
             currentMaterial = id;
-            const tool = tools.find(t => t.id === id);
-            if(tool) document.getElementById('currentMat').innerText = tool.name;
-            document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('translate-x-4', 'border-white'));
-            const btn = document.getElementById('btn-'+id);
-            if(btn) btn.classList.add('translate-x-4', 'border-white');
+
+            // Check in all current tools
+            let tool = allCurrentTools.find(t => t.id === id);
+            // Fallback lookup if not in current list (e.g. if we just clicked a placeholder that isn't really a tool yet but is in ID range)
+            if (!tool) tool = extraToolsSource.find(t => t.id === id) || permanentTools.find(t => t.id === id);
+
+            if (tool) document.getElementById('currentMat').innerText = tool.name;
+
+            document.querySelectorAll('.mat-btn').forEach(b => {
+                b.classList.remove('translate-x-4', 'border-white');
+            });
+            const btn = document.getElementById('btn-' + id);
+            if (btn) btn.classList.add('translate-x-4', 'border-white');
         }
 
         function getPos(e) {
@@ -295,48 +613,60 @@
         }
 
         function paint(e) {
-            if (!isDrawing) return;
+            if (!isDrawing && e.type !== 'mousedown' && e.type !== 'touchstart') return;
             if (e.target.closest('#settingsPanel') || e.target.closest('#worldsPanel')) return;
 
+            // Single placement for Firework
+            if (currentMaterial === M.FIREWORK && (e.type === 'mousemove' || e.type === 'touchmove')) return;
+
             const { x, y } = getPos(e);
+            // Force size 1 for firework (single rocket)
             let size = (currentMaterial === M.AIR) ? eraserSize : brushSize;
+            if (currentMaterial === M.FIREWORK) size = 1;
+
             let r = (size <= 1) ? 0 : Math.floor(size / 2);
-            
+
             for (let dy = -r; dy <= r; dy++) {
                 for (let dx = -r; dx <= r; dx++) {
                     let py = y + dy; let px = x + dx;
                     if (px >= 0 && px < width && py >= 0 && py < height) {
                         let idx = py * width + px;
+
+                        // Firework already present? skip
+                        if (currentMaterial === M.FIREWORK && grid[idx] === M.FIREWORK) continue;
+
                         if (currentMaterial === M.FIRE) {
                             if (grid[idx] === M.STONE) {
-                                if (py > 0) { grid[(py-1)*width+px] = M.FIRE; heatMap[(py-1)*width+px] = 255; }
-                                continue; 
+                                if (py > 0) { grid[(py - 1) * width + px] = M.FIRE; heatMap[(py - 1) * width + px] = 255; }
+                                continue;
                             }
                         }
                         if (currentMaterial === M.FIRE && (grid[idx] === M.STONE || grid[idx] === M.WOOD)) continue;
                         grid[idx] = currentMaterial;
                         if (currentMaterial === M.WATER) { heatMap[idx] = 0; liquidDir[idx] = 0; }
+                        // Randomize lifetime so they explode at different heights (20-50 frames)
+                        if (currentMaterial === M.FIREWORK) { fireworkVel[idx] = 240 + Math.floor(Math.random() * 30); }
                     }
                 }
             }
         }
 
         ['mousedown', 'touchstart'].forEach(evt => canvas.addEventListener(evt, e => { isDrawing = true; paint(e); }));
-        ['mousemove', 'touchmove'].forEach(evt => canvas.addEventListener(evt, e => { if(isDrawing) { e.preventDefault(); paint(e); }}));
+        ['mousemove', 'touchmove'].forEach(evt => canvas.addEventListener(evt, e => { if (isDrawing) { e.preventDefault(); paint(e); } }));
         ['mouseup', 'touchend'].forEach(evt => window.addEventListener(evt, () => isDrawing = false));
 
-        function resetWorld() { grid.fill(0); heatMap.fill(0); liquidDir.fill(0); }
+        function resetWorld() { grid.fill(0); heatMap.fill(0); liquidDir.fill(0); fireworkVel.fill(0); sparkColors.fill(0); }
 
         // --- PHYSICS UPDATE ---
         function updatePhysics() {
             let activeParticles = 0;
             globalTime += 0.1;
-            
+
             // 1. HEATMAP & FEUER LOGIK
             for (let x = 0; x < width; x++) {
                 for (let y = 1; y < height; y++) {
                     const idx = y * width + x;
-                    
+
                     if (grid[idx] === M.FIRE) {
                         heatMap[idx] = 255;
                         continue;
@@ -344,14 +674,14 @@
 
                     // --- WIND LOGIK ---
                     let windOffset = 0;
-                    
+
                     if (fireChaos < 0.1) {
-                         if (Math.random() < 0.05 + Math.sin(globalTime)*0.05) windOffset = (Math.random()>0.5?1:-1);
+                        if (Math.random() < 0.05 + Math.sin(globalTime) * 0.05) windOffset = (Math.random() > 0.5 ? 1 : -1);
                     } else {
-                        const chaosFactor = fireChaos; 
+                        const chaosFactor = fireChaos;
                         const rand = Math.random();
                         if (rand < 0.3 * chaosFactor) {
-                             windOffset = (Math.random() > 0.5) ? 1 : -1;
+                            windOffset = (Math.random() > 0.5) ? 1 : -1;
                         } else {
                             if (rand < 0.4) windOffset = 0; else if (rand < 0.7) windOffset = -1; else windOffset = 1;
                         }
@@ -360,13 +690,13 @@
                     const srcX = x + windOffset;
                     if (srcX >= 0 && srcX < width) {
                         const srcIdx = (y + 1) * width + srcX;
-                        
+
                         // --- DECAY LOGIK ---
                         let decay = 0;
                         if (fireChaos < 0.1) {
                             decay = 2; // Stabil
                         } else {
-                            decay = Math.floor(Math.random() * 3); 
+                            decay = Math.floor(Math.random() * 3);
                             if (Math.random() < (0.2 * fireChaos)) decay += Math.random() * 10; // Spikes
                         }
 
@@ -377,12 +707,87 @@
                     } else {
                         heatMap[idx] = 0;
                     }
-                    
+
                     if (grid[idx] === M.WATER || grid[idx] === M.STONE) heatMap[idx] = 0;
                 }
             }
 
-            // 2. MATERIALS
+            // 2. MATERIALS - PASS 1 (UPWARD MOVERS: FIRE, STEAM, FIREWORK)
+            // Iterate Top to Bottom so moving UP doesn't get processed again immediately
+            for (let y = 0; y < height; y++) {
+                const dir = Math.random() > 0.5 ? 1 : -1;
+                for (let i = 0; i < width; i++) {
+                    let x = (dir === 1) ? i : (width - 1 - i);
+                    const idx = y * width + x;
+                    const type = grid[idx];
+                    if (type === M.AIR) continue;
+
+                    if (type === M.FIREWORK) {
+                        // Firework logic
+                        // Initialize lifetime if somehow 0 (fallback)
+                        if (fireworkVel[idx] === 0) fireworkVel[idx] = 240 + Math.floor(Math.random() * 30);
+
+                        const life = fireworkVel[idx];
+                        fireworkVel[idx] = life - 1; // Decrease life every frame
+
+                        // Move upwards at ~60% speed (so it takes 1.5s to go ~54px height, visible but not instant to top)
+                        // Or slightly faster? User said "goes to top" (bad). Let's make it cover ~1/3 screen.
+                        if (life > 1 && y > 2) { // y > 2 to check ceiling
+                            // Move check
+                            if (Math.random() < 0.6) {
+                                const above = idx - width;
+                                if (grid[above] === M.AIR || grid[above] === M.VINE || grid[above] === M.FIREWORK || grid[above] === M.SPARK) {
+                                    grid[above] = M.FIREWORK;
+                                    fireworkVel[above] = life - 1;
+                                    if (grid[above] === M.FIREWORK) {
+                                        grid[idx] = M.AIR;
+                                        fireworkVel[idx] = 0;
+                                    }
+                                }
+                            }
+                        } else {
+                            // Explode (Life ended or hit something)
+                            grid[idx] = M.AIR;
+                            fireworkVel[idx] = 0;
+                            const color = Math.floor(Math.random() * 0xFFFFFF);
+                            for (let ey = -6; ey <= 6; ey++) {
+                                for (let ex = -6; ex <= 6; ex++) {
+                                    if (ex * ex + ey * ey <= 36 && Math.random() < 0.5) {
+                                        const sx = x + ex, sy = y + ey;
+                                        if (sx >= 0 && sx < width && sy >= 0 && sy < height) {
+                                            const si = sy * width + sx;
+                                            if (grid[si] === M.AIR) {
+                                                grid[si] = M.SPARK;
+                                                sparkColors[si] = color;
+                                                heatMap[si] = 160 + Math.random() * 95;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if (type === M.FIRE) {
+                        // Fire logic
+                        if (heatMap[idx] === 0 && grid[idx] === M.FIRE) {
+                            const up = idx - width;
+                            if (y > 0 && grid[up] === M.WATER) { grid[idx] = M.AIR; grid[up] = M.STEAM; continue; }
+                        }
+                        if (y < height - 1) {
+                            const below = idx + width;
+                            const belowMat = grid[below];
+                            if (belowMat === M.AIR) { grid[below] = M.FIRE; grid[idx] = M.AIR; }
+                            else if ((belowMat === M.WOOD || belowMat === M.LEAVES) && Math.random() < 0.00001 * fireIntensity) grid[below] = M.FIRE;
+                        }
+                    }
+                    else if (type === M.STEAM) {
+                        if (y > 0 && grid[idx - width] === M.AIR) { grid[idx - width] = M.STEAM; grid[idx] = M.AIR; }
+                        else if (Math.random() < 0.05) grid[idx] = M.AIR;
+                    }
+                }
+            }
+
+            // 3. MATERIALS - PASS 2 (DOWNWARD MOVERS: SAND, WATER, LAVA, SPARK, VINE)
             for (let y = height - 1; y >= 0; y--) {
                 const dir = Math.random() > 0.5 ? 1 : -1;
                 for (let i = 0; i < width; i++) {
@@ -393,48 +798,31 @@
                     activeParticles++;
 
                     if (type === M.WOOD || type === M.LEAVES) {
-                        const ignitionThreshold = 120 / fireIntensity; 
-                        if (heatMap[idx] > ignitionThreshold && Math.random() < 0.08 * fireIntensity) {
-                            grid[idx] = M.FIRE; heatMap[idx] = 255;
-                        }
+                        const ignitionThreshold = 120 / fireIntensity;
+                        if (heatMap[idx] > ignitionThreshold && Math.random() < 0.03 * fireIntensity) { grid[idx] = M.FIRE; heatMap[idx] = 255; }
                     }
-                    else if (type === M.FIRE) {
-                        if (heatMap[idx] === 0 && grid[idx] === M.FIRE) {
-                             const up = idx - width;
-                             if (y > 0 && grid[up] === M.WATER) { grid[idx] = M.AIR; grid[up] = M.STEAM; continue; }
-                        }
-                        if (y < height - 1) {
-                            const below = idx + width;
-                            const belowMat = grid[below];
-                            if (belowMat === M.AIR) { grid[below] = M.FIRE; grid[idx] = M.AIR; } 
-                            else if ((belowMat === M.WOOD || belowMat === M.LEAVES) && Math.random() < 0.03 * fireIntensity) grid[below] = M.FIRE;
-                        }
-                    }
-                    
-                    // --- SMOOTH WATER ---
                     else if (type === M.WATER) {
+                        // Water logic
                         const below = idx + width;
                         if (heatMap[idx] > 200) { grid[idx] = M.STEAM; continue; }
-                        
+
                         if (y < height - 1) {
                             if (grid[below] === M.AIR) {
                                 grid[below] = M.WATER; grid[idx] = M.AIR; liquidDir[below] = 0;
                             } else if (grid[below] === M.FIRE) {
-                                grid[below] = M.AIR; grid[idx] = M.STEAM; 
+                                grid[below] = M.AIR; grid[idx] = M.STEAM;
                             } else if (grid[below] !== M.AIR) {
                                 let flowDir = liquidDir[idx];
                                 if (flowDir === 0) flowDir = Math.random() < 0.5 ? 1 : -1;
-                                
                                 const speed = 4;
                                 let bestX = x;
-                                for(let k=1; k<=speed; k++) {
+                                for (let k = 1; k <= speed; k++) {
                                     let nextX = x + (flowDir * k);
-                                    if(nextX < 0 || nextX >= width) break;
+                                    if (nextX < 0 || nextX >= width) break;
                                     const nextIdx = y * width + nextX;
-                                    if (grid[nextIdx] !== M.AIR) break; 
+                                    if (grid[nextIdx] !== M.AIR) break;
                                     bestX = nextX;
                                 }
-
                                 if (bestX !== x) {
                                     grid[y * width + bestX] = M.WATER; grid[idx] = M.AIR;
                                     liquidDir[y * width + bestX] = flowDir;
@@ -443,11 +831,6 @@
                                 }
                             }
                         }
-                    }
-                    
-                    else if (type === M.STEAM) {
-                        if (y > 0 && grid[idx-width] === M.AIR) { grid[idx-width]=M.STEAM; grid[idx]=M.AIR; } 
-                        else if(Math.random()<0.05) grid[idx]=M.AIR;
                     }
                     else if (type === M.SAND) {
                         const below = idx + width;
@@ -464,6 +847,66 @@
                             }
                         }
                     }
+                    else if (type === M.SPARK) {
+                        heatMap[idx] -= 8;
+                        if (heatMap[idx] <= 0 || Math.random() < 0.1) {
+                            grid[idx] = M.AIR; sparkColors[idx] = 0; heatMap[idx] = 0; // Clear heat to prevent artifacts
+                        } else if (y < height - 1 && Math.random() < 0.3) {
+                            const below = idx + width;
+                            if (grid[below] === M.AIR) {
+                                grid[below] = M.SPARK; sparkColors[below] = sparkColors[idx];
+                                heatMap[below] = heatMap[idx]; grid[idx] = M.AIR; sparkColors[idx] = 0;
+                            }
+                        }
+                    }
+                    else if (type === M.VINE) {
+                        if (heatMap[idx] > 80) { grid[idx] = M.FIRE; heatMap[idx] = 200; continue; }
+                        if (Math.random() < 0.01) {
+                            const dirs = [[0, 1], [1, 0], [-1, 0], [0, -1]];
+                            const [dx, dy] = dirs[Math.floor(Math.random() * dirs.length)];
+                            const nx = x + dx, ny = y + dy;
+                            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                                const ni = ny * width + nx;
+                                if (grid[ni] === M.AIR) grid[ni] = M.VINE;
+                            }
+                        }
+                    }
+                    else if (type === M.LAVA) {
+                        for (let dy2 = -1; dy2 <= 1; dy2++) {
+                            for (let dx2 = -1; dx2 <= 1; dx2++) {
+                                const nx = x + dx2, ny = y + dy2;
+                                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                                    const ni = ny * width + nx;
+                                    const neighbor = grid[ni];
+                                    if ((neighbor === M.WOOD || neighbor === M.LEAVES || neighbor === M.VINE) && Math.random() < 0.019) {
+                                        grid[ni] = M.FIRE; heatMap[ni] = 255;
+                                    }
+                                    if (neighbor === M.WATER) { grid[idx] = M.STONE; grid[ni] = M.STEAM; continue; }
+                                }
+                            }
+                        }
+                        // Slow flow (modified to 15% probability = 35% slower than 0.25)
+                        if (Math.random() < 0.16) {
+                            const below = idx + width;
+                            if (y < height - 1) {
+                                if (grid[below] === M.AIR) {
+                                    grid[below] = M.LAVA; grid[idx] = M.AIR; liquidDir[below] = 0;
+                                } else if (grid[below] !== M.AIR) { // Removed grid[below] !== M.LAVA check
+                                    let flowDir = liquidDir[idx];
+                                    if (flowDir === 0) flowDir = Math.random() < 0.5 ? 1 : -1;
+                                    const nextX = x + flowDir;
+                                    const otherX = x - flowDir;
+                                    let moved = false;
+                                    if (nextX >= 0 && nextX < width && grid[y * width + nextX] === M.AIR) {
+                                        grid[y * width + nextX] = M.LAVA; grid[idx] = M.AIR; liquidDir[y * width + nextX] = flowDir; moved = true;
+                                    } else if (otherX >= 0 && otherX < width && grid[y * width + otherX] === M.AIR) {
+                                        grid[y * width + otherX] = M.LAVA; grid[idx] = M.AIR; liquidDir[y * width + otherX] = -flowDir; moved = true;
+                                    }
+                                    if (!moved) liquidDir[idx] = flowDir;
+                                }
+                            }
+                        }
+                    }
                 }
             }
             entDisplay.innerText = activeParticles;
@@ -475,14 +918,14 @@
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
                     const cell = grid[i];
-                    const heat = heatMap[i]; 
+                    const heat = heatMap[i];
                     let r, g, b;
 
-                    if (cell === M.AIR) {
+                    if (cell === M.AIR || cell === M.FIREWORK) {
                         if (heat > 0) {
                             let palIdx = 0;
-                            if (heat > 220) palIdx = 4; else if (heat > 160) palIdx = 3; 
-                            else if (heat > 80) palIdx = 2; else if (heat > 20) palIdx = 1;  
+                            if (heat > 220) palIdx = 4; else if (heat > 160) palIdx = 3;
+                            else if (heat > 80) palIdx = 2; else if (heat > 20) palIdx = 1;
                             if (palIdx > 0) [r, g, b] = firePalette[palIdx];
                             else {
                                 const grad = y / height;
@@ -491,42 +934,104 @@
                         } else {
                             const grad = y / height;
                             r = 15 + (grad * 5); g = 23 + (grad * 10); b = 42 + (grad * 20);
-                            const noise = Math.sin(x * 0.04 + time * 0.2) + Math.sin((x+y)*0.02) + Math.sin(y*0.1);
+                            const noise = Math.sin(x * 0.04 + time * 0.2) + Math.sin((x + y) * 0.02) + Math.sin(y * 0.1);
                             let mask = 1 - (y / (height * 0.45)); mask = Math.max(0, mask);
                             if (noise > 0.5 && mask > 0) {
                                 const cloud = (noise * mask * 60); r += cloud; g += cloud; b += cloud + 10;
                             }
                         }
-                    } 
+                    }
                     else if (cell === M.FIRE) { r = 255; g = 255; b = 200; }
+                    // --- SPARK (custom color from explosion) ---
+                    else if (cell === M.SPARK) {
+                        const col = sparkColors[i];
+                        r = ((col >> 16) & 0xFF) * (heat / 200);
+                        g = ((col >> 8) & 0xFF) * (heat / 200);
+                        b = (col & 0xFF) * (heat / 200);
+                        // Add brightness
+                        r = Math.min(255, r + 50);
+                        g = Math.min(255, g + 30);
+                        b = Math.min(255, b + 20);
+                    }
+                    // --- VINE (dynamic green pattern) ---
+                    else if (cell === M.VINE) {
+                        const pattern = Math.sin(x * 0.5 + y * 0.3 + time) * 0.5 + 0.5;
+                        r = 20 + pattern * 30;
+                        g = 80 + pattern * 60 + (Math.random() - 0.5) * 20;
+                        b = 20 + pattern * 20;
+                        if (heat > 30) { r += heat * 0.5; g -= heat * 0.2; }
+                    }
+                    // --- LAVA (animated glow) ---
+                    else if (cell === M.LAVA) {
+                        const glow = Math.sin(time * 2 + x * 0.2 + y * 0.1) * 0.3 + 0.7;
+                        r = 200 + glow * 55;
+                        g = 50 + glow * 80 + (Math.random() - 0.5) * 30;
+                        b = 0 + glow * 20;
+                    }
+                    // --- FIREWORK (handled as AIR above, sprite drawn later) ---
+                    // else if (cell === M.FIREWORK) { ... }
                     else {
-                        [r, g, b] = colors[cell];
-                        if (cell !== M.WATER && cell !== M.STEAM) {
-                             const noise = (Math.random() - 0.5) * 15; r+=noise; g+=noise; b+=noise;
+                        if (colors[cell]) {
+                            [r, g, b] = colors[cell];
+                            if (cell !== M.WATER && cell !== M.STEAM) {
+                                const noise = (Math.random() - 0.5) * 15; r += noise; g += noise; b += noise;
+                            }
+                            if (cell === M.WATER && liquidDir[i] !== 0) { r += 10; g += 10; b += 20; }
+                            if ((cell === M.WOOD || cell === M.LEAVES) && heat > 50) { r += (heat / 2); g -= (heat / 3); }
+                        } else {
+                            // Support for future materials (placeholders)
+                            r = 100; g = 0; b = 100; // Debug purple
                         }
-                        if (cell === M.WATER && liquidDir[i] !== 0) { r+=10; g+=10; b+=20; }
-                        if ((cell === M.WOOD || cell === M.LEAVES) && heat > 50) { r += (heat/2); g -= (heat/3); }
                     }
                     const pIdx = i * 4;
-                    data[pIdx] = r; data[pIdx+1] = g; data[pIdx+2] = b; data[pIdx+3] = 255;
+                    data[pIdx] = r; data[pIdx + 1] = g; data[pIdx + 2] = b; data[pIdx + 3] = 255;
                     i++;
                 }
             }
             ctx.putImageData(imgData, 0, 0);
+
+            // POST-RENDER: Draw Sprites (Fireworks)
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = y * width + x;
+                    if (grid[idx] === M.FIREWORK) {
+                        // Draw Canister Sprite
+                        ctx.fillStyle = '#94a3b8'; // Element gray
+                        ctx.fillRect(x, y, 2, 4);
+                        ctx.fillStyle = '#ef4444'; // Red stripe
+                        ctx.fillRect(x, y + 1, 2, 1);
+                        // Tip highlight
+                        ctx.fillStyle = '#e2e8f0';
+                        ctx.fillRect(x, y, 2, 1);
+                    }
+                }
+            }
         }
 
         let lastTime = 0;
+        let tickAccumulator = 0;
         function loop(timestamp) {
             const dt = timestamp - lastTime;
-            updatePhysics();
+            lastTime = timestamp;
+
+            tickAccumulator += simulationSpeed;
+            // Cap accumulator to prevent spiral of death or huge skips
+            if (tickAccumulator > 5) tickAccumulator = 5;
+
+            while (tickAccumulator >= 1) {
+                updatePhysics();
+                tickAccumulator -= 1;
+            }
+
             draw();
             if (dt > 0 && timestamp % 10 < 1) fpsDisplay.innerText = Math.round(1000 / dt);
-            lastTime = timestamp;
             requestAnimationFrame(loop);
         }
 
         resetWorld();
+        renderTools(); // Init sidebar
         requestAnimationFrame(loop);
     </script>
 </body>
+
 </html>
